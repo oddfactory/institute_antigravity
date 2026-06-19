@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Users, FolderOpen, Link2, FileText, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, FolderOpen, Link2, FileText, Settings, LogOut } from 'lucide-react';
 import ValidationPanel from './components/ValidationPanel';
 import Dashboard from './pages/Dashboard';
 import Researchers from './pages/Researchers';
@@ -7,13 +7,24 @@ import Projects from './pages/Projects';
 import Participations from './pages/Participations';
 import DocumentRenderer from './pages/DocumentRenderer';
 import SettingsModal from './components/SettingsModal';
+import Login from './components/Login';
 import { useValidation } from './utils/validationEngine';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('is_admin_authenticated') === 'true' ||
+           sessionStorage.getItem('is_admin_authenticated') === 'true';
+  });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { getIssues } = useValidation();
   const issues = getIssues();
+
+  const handleLogout = () => {
+    localStorage.removeItem('is_admin_authenticated');
+    sessionStorage.removeItem('is_admin_authenticated');
+    setIsAuthenticated(false);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -25,6 +36,10 @@ function App() {
       default: return <Dashboard />;
     }
   };
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="app-container">
@@ -50,9 +65,14 @@ function App() {
             리스크 {issues.length}건
           </span>
         </div>
-        <button onClick={() => setIsSettingsOpen(true)} className="secondary" style={{ padding: '0.5rem' }}>
-          <Settings size={20} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button onClick={handleLogout} className="secondary" style={{ padding: '0.5rem' }} title="로그아웃">
+            <LogOut size={20} />
+          </button>
+          <button onClick={() => setIsSettingsOpen(true)} className="secondary" style={{ padding: '0.5rem' }} title="설정">
+            <Settings size={20} />
+          </button>
+        </div>
       </header>
 
       <nav style={{ 
