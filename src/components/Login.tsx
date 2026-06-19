@@ -14,8 +14,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get password from environment variables (built-in Vite support) or fallback to 'admin1234'
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin1234';
+    // Get password from environment variables (built-in Vite support) or fallback to 'emnet22778877'
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'emnet22778877';
 
     if (password === adminPassword) {
       if (rememberMe) {
@@ -189,7 +189,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           fontSize: '0.8rem',
           color: 'var(--color-text-muted)'
         }}>
-          Vercel 환경 변수 `VITE_ADMIN_PASSWORD`로 비밀번호 설정이 가능합니다.
+          비밀번호 분실 시 관리자에게 문의해 주세요.
         </div>
       </div>
     </div>
