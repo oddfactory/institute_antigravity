@@ -4,10 +4,40 @@ import { format, eachMonthOfInterval, startOfYear, endOfYear, subYears, addYears
 export default function Dashboard() {
   const { researchers, projects, participations } = useAppStore();
 
-  // Generate Timeline Months (Last 2 years + Current Year + Next Year)
   const today = new Date();
-  const startD = startOfYear(subYears(today, 2));
-  const endD = endOfYear(addYears(today, 1));
+  let startD = startOfYear(subYears(today, 2));
+  let endD = endOfYear(addYears(today, 1));
+
+  // Dynamically scale timeline based on all projects and researchers' active dates
+  if (projects.length > 0 || researchers.length > 0) {
+    const dates: Date[] = [];
+    projects.forEach(p => {
+      if (p.startDate) {
+        const d = new Date(p.startDate);
+        if (!isNaN(d.getTime())) dates.push(d);
+      }
+      if (p.endDate) {
+        const d = new Date(p.endDate);
+        if (!isNaN(d.getTime())) dates.push(d);
+      }
+    });
+    researchers.forEach(r => {
+      if (r.joinDate) {
+        const d = new Date(r.joinDate);
+        if (!isNaN(d.getTime())) dates.push(d);
+      }
+      if (r.leaveDate) {
+        const d = new Date(r.leaveDate);
+        if (!isNaN(d.getTime())) dates.push(d);
+      }
+    });
+
+    if (dates.length > 0) {
+      const sortedDates = dates.sort((a, b) => a.getTime() - b.getTime());
+      startD = startOfYear(sortedDates[0]);
+      endD = endOfYear(sortedDates[sortedDates.length - 1]);
+    }
+  }
   
   const months = eachMonthOfInterval({ start: startD, end: endD });
   const monthStrings = months.map(m => format(m, 'yyyy-MM'));
@@ -87,7 +117,7 @@ export default function Dashboard() {
                     <div key={m} style={{ 
                       width: `${cellWidth}px`, 
                       flexShrink: 0, 
-                      backgroundColor: isActive ? 'rgba(255, 217, 61, 0.4)' : 'transparent',
+                      backgroundColor: isActive ? 'rgba(255, 217, 61, 0.6)' : 'transparent',
                       borderLeft: '1px solid rgba(255,255,255,0.05)',
                       height: '100%',
                       borderRadius: isActive ? '4px' : '0'
