@@ -38,6 +38,12 @@ export default function Dashboard() {
       endD = endOfYear(sortedDates[sortedDates.length - 1]);
     }
   }
+
+  // Clamp timeline to avoid infinite rendering freezes on typo/extreme dates
+  const minAllowedDate = startOfYear(subYears(today, 5));
+  const maxAllowedDate = endOfYear(addYears(today, 5));
+  if (startD < minAllowedDate) startD = minAllowedDate;
+  if (endD > maxAllowedDate) endD = maxAllowedDate;
   
   const months = eachMonthOfInterval({ start: startD, end: endD });
   const monthStrings = months.map(m => format(m, 'yyyy-MM'));
