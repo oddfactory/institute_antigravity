@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import type { Researcher } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, Award, X } from 'lucide-react';
+import { Plus, Trash2, Award, X, Edit } from 'lucide-react';
 import { getRankAtDate } from '../utils/rankResolver';
 
 export default function Researchers() {
@@ -14,6 +14,7 @@ export default function Researchers() {
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedResearcherForHistory, setSelectedResearcherForHistory] = useState<Researcher | null>(null);
+  const [editingResearcher, setEditingResearcher] = useState<Researcher | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +147,14 @@ export default function Researchers() {
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button 
                           className="secondary" 
+                          onClick={() => setEditingResearcher(r)} 
+                          style={{ padding: '0.3rem' }} 
+                          title="정보 수정"
+                        >
+                          <Edit size={16}/>
+                        </button>
+                        <button 
+                          className="secondary" 
                           onClick={() => setSelectedResearcherForHistory(r)} 
                           style={{ padding: '0.3rem' }} 
                           title="직급 이력 관리"
@@ -170,6 +179,13 @@ export default function Researchers() {
         <RankHistoryModal 
           researcherId={selectedResearcherForHistory.id} 
           onClose={() => setSelectedResearcherForHistory(null)} 
+        />
+      )}
+
+      {editingResearcher && (
+        <ResearcherEditModal 
+          researcherId={editingResearcher.id} 
+          onClose={() => setEditingResearcher(null)} 
         />
       )}
     </div>
@@ -303,6 +319,146 @@ function RankHistoryModal({ researcherId, onClose }: RankHistoryModalProps) {
           <button type="submit" style={{ width: '100%', justifyContent: 'center' }}>
             <Plus size={16} /> 이력 추가
           </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+interface ResearcherEditModalProps {
+  researcherId: string;
+  onClose: () => void;
+}
+
+function ResearcherEditModal({ researcherId, onClose }: ResearcherEditModalProps) {
+  const { researchers, categories, updateResearcher } = useAppStore();
+  const researcher = researchers.find(r => r.id === researcherId);
+
+  const [editFormData, setEditFormData] = useState({
+    empNo: researcher?.empNo || '',
+    name: researcher?.name || '',
+    joinDate: researcher?.joinDate || '',
+    leaveDate: researcher?.leaveDate || '',
+    education: researcher?.education || '',
+    major: researcher?.major || '',
+    role: researcher?.role || ''
+  });
+  const [selectedFields, setSelectedFields] = useState<string[]>(researcher?.researchFields || []);
+
+  if (!researcher) return null;
+
+  const handleCheckboxChange = (field: string) => {
+    setSelectedFields(prev => 
+      prev.includes(field) ? prev.filter(f => f !== field) : [...prev, field]
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData.empNo.trim() || !editFormData.name.trim() || !editFormData.joinDate) return;
+
+    // 만약 입사일(joinDate)이 변경되었다면, 첫 번째 직급 이력의 키도 새 입사일로 갱신해 줍니다.
+    let updatedRankHistory = { ...researcher.rankHistory };
+    if (editFormData.joinDate !== researcher.joinDate) {
+      const oldJoinDate = researcher.joinDate;
+      if (updatedRankHistory[oldJoinDate]) {
+        const initialRank = updatedRankHistory[oldJoinDate];
+        delete updatedRankHistory[oldJoinDate];
+        updatedRankHistory[editFormData.joinDate] = initialRank;
+      }
+    }
+
+    updateResearcher(researcher.id, {
+      empNo: editFormData.empNo.trim(),
+      name: editFormData.name.trim(),
+      joinDate: editFormData.joinDate,
+      leaveDate: editFormData.leaveDate || null,
+      education: editFormData.education.trim(),
+      major: editFormData.major.trim(),
+      role: editFormData.role.trim(),
+      researchFields: selectedFields,
+      rankHistory: updatedRankHistory
+    });
+    
+    onClose();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }}>
+      <div className="panel" style={{ width: '600px', maxWidth: '90%', position: 'relative', margin: 0 }}>
+        <button 
+          onClick={onClose}
+          style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', padding: 0 }}
+        >
+          <X size={20} color="var(--color-text-muted)" />
+        </button>
+        
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <Edit size={20} />
+          연구원 정보 수정
+        </h2>
+
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>사원번호</label>
+            <input value={editFormData.empNo} onChange={e => setEditFormData({...editFormData, empNo: e.target.value})} required />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>성명</label>
+            <input value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} required />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>입사일</label>
+            <input type="date" value={editFormData.joinDate} onChange={e => setEditFormData({...editFormData, joinDate: e.target.value})} required />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>퇴사일(연구소 제외일)</label>
+            <input type="date" value={editFormData.leaveDate} onChange={e => setEditFormData({...editFormData, leaveDate: e.target.value})} />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>최종학력</label>
+            <input value={editFormData.education} onChange={e => setEditFormData({...editFormData, education: e.target.value})} required />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>전공</label>
+            <input value={editFormData.major} onChange={e => setEditFormData({...editFormData, major: e.target.value})} required />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>담당 업무</label>
+            <input value={editFormData.role} onChange={e => setEditFormData({...editFormData, role: e.target.value})} required />
+          </div>
+          
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              연구 분야 선택 (최대 2개 권장, 3개 이상 시 경고 발생)
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', backgroundColor: 'var(--color-charcoal)', padding: '0.8rem', borderRadius: 'var(--radius-sm)' }}>
+              {categories.map(c => (
+                <label key={c} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox" 
+                    style={{ width: 'auto' }}
+                    checked={selectedFields.includes(c)} 
+                    onChange={() => handleCheckboxChange(c)} 
+                  />
+                  {c}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+            <button type="button" className="secondary" onClick={onClose}>취소</button>
+            <button type="submit">저장</button>
+          </div>
         </form>
       </div>
     </div>
