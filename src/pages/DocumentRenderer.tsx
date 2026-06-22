@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Download, FileDown, Sparkles } from 'lucide-react';
 import { generateAiSample } from '../utils/geminiApi';
+import { getRankAtDate } from '../utils/rankResolver';
 import * as XLSX from 'xlsx';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
@@ -54,7 +55,7 @@ export default function DocumentRenderer() {
         const row: any = {
           '사원번호': r.empNo,
           '성명': r.name,
-          '직급': Object.values(r.rankHistory)[0] || '',
+          '직급': getRankAtDate(r, selectedYear),
           '과제명': '배정 과제 없음',
           '담당업무': r.role,
         };
@@ -68,7 +69,7 @@ export default function DocumentRenderer() {
           const row: any = {
             '사원번호': r.empNo,
             '성명': r.name,
-            '직급': Object.values(r.rankHistory)[0] || '',
+            '직급': getRankAtDate(r, selectedYear),
             '과제명': pr?.name || '',
             '담당업무': r.role,
           };
@@ -159,7 +160,7 @@ export default function DocumentRenderer() {
                   return (
                     <tr key={r.id}>
                       <td style={{ border: '1px solid black', color: 'black', padding: '0.4rem' }}>{r.empNo}</td>
-                      <td style={{ border: '1px solid black', color: 'black', padding: '0.4rem', fontWeight: 'bold' }}>{r.name} ({Object.values(r.rankHistory)[0]})</td>
+                      <td style={{ border: '1px solid black', color: 'black', padding: '0.4rem', fontWeight: 'bold' }}>{r.name} ({getRankAtDate(r, selectedYear)})</td>
                       <td style={{ border: '1px solid black', color: '#888', padding: '0.4rem', fontStyle: 'italic' }}>배정 과제 없음</td>
                       {months.map(m => (
                         <td key={m} style={{ border: '1px solid black', color: '#ccc', textAlign: 'center' }}>0%</td>
@@ -181,7 +182,7 @@ export default function DocumentRenderer() {
                         <td rowSpan={projectIds.length} style={{ border: '1px solid black', color: 'black', padding: '0.4rem', verticalAlign: 'middle' }}>{r.empNo}</td>
                       )}
                       {isFirst && (
-                        <td rowSpan={projectIds.length} style={{ border: '1px solid black', color: 'black', padding: '0.4rem', fontWeight: 'bold', verticalAlign: 'middle' }}>{r.name} ({Object.values(r.rankHistory)[0]})</td>
+                        <td rowSpan={projectIds.length} style={{ border: '1px solid black', color: 'black', padding: '0.4rem', fontWeight: 'bold', verticalAlign: 'middle' }}>{r.name} ({getRankAtDate(r, selectedYear)})</td>
                       )}
                       <td style={{ border: '1px solid black', color: 'black', padding: '0.4rem' }}>{pr?.name}</td>
                       {months.map(m => {
@@ -232,7 +233,7 @@ export default function DocumentRenderer() {
               return (
                 <div key={r.id} style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '4px' }}>
                   <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.5rem', color: 'black' }}>
-                    {r.name} {Object.values(r.rankHistory)[0] || '연구원'}
+                    {r.name} {getRankAtDate(r, selectedYear) || '연구원'}
                   </h3>
                   <table style={{ width: '100%', fontSize: '0.8rem', marginTop: '0.5rem', color: 'black' }}>
                     <tbody>
@@ -291,7 +292,7 @@ export default function DocumentRenderer() {
 
                   <div style={{ fontSize: '0.85rem' }}>
                     <p style={{ marginBottom: '0.5rem' }}>
-                      <strong>참여 연구원:</strong> {projectResearchers.map(r => `${r.name}(${Object.values(r.rankHistory)[0]})`).join(', ') || '없음'}
+                      <strong>참여 연구원:</strong> {projectResearchers.map(r => `${r.name}(${getRankAtDate(r, selectedYear)})`).join(', ') || '없음'}
                     </p>
                     <div style={{ backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '4px', borderLeft: '3px solid var(--color-slate-blue)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
