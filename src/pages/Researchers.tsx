@@ -6,7 +6,7 @@ import { Plus, Trash2, Award, X } from 'lucide-react';
 import { getRankAtDate } from '../utils/rankResolver';
 
 export default function Researchers() {
-  const { researchers, categories, addResearcher, updateResearcher, deleteResearcher, addCategory, deleteCategory } = useAppStore();
+  const { researchers, categories, addResearcher, deleteResearcher, addCategory, deleteCategory } = useAppStore();
 
   const [formData, setFormData] = useState({
     empNo: '', name: '', joinDate: '', leaveDate: '', rank: '', education: '', major: '', role: ''
