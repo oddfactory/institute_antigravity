@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import type { Participation } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Calendar, AlertCircle, Sparkles } from 'lucide-react';
 import { eachMonthOfInterval, format, parse } from 'date-fns';
 
 export default function Participations() {
@@ -40,6 +40,96 @@ export default function Participations() {
   const getResearcherName = (id: string) => researchers.find(r => r.id === id)?.name || '알 수 없음';
   const getProjectName = (id: string) => projects.find(p => p.id === id)?.name || '알 수 없음';
 
+  const selectedResearcher = researchers.find(r => r.id === formData.researcherId);
+  const selectedProject = projects.find(p => p.id === formData.projectId);
+
+  let recommendationSection = null;
+
+  if (selectedResearcher && selectedProject) {
+    const pStart = selectedProject.startDate.substring(0, 7);
+    const pEnd = selectedProject.endDate.substring(0, 7);
+    const rStart = selectedResearcher.joinDate.substring(0, 7);
+    const rEnd = selectedResearcher.leaveDate ? selectedResearcher.leaveDate.substring(0, 7) : null;
+
+    // Overlap range
+    const overlapStart = rStart > pStart ? rStart : pStart;
+    let overlapEnd = pEnd;
+    if (rEnd && rEnd < pEnd) {
+      overlapEnd = rEnd;
+    }
+
+    const isValidOverlap = overlapStart <= overlapEnd;
+
+    const handleApplyRecommendation = () => {
+      setFormData(prev => ({
+        ...prev,
+        startMonth: overlapStart,
+        endMonth: overlapEnd
+      }));
+    };
+
+    if (isValidOverlap) {
+      recommendationSection = (
+        <div style={{ 
+          gridColumn: '1 / -1', 
+          backgroundColor: 'rgba(107, 114, 142, 0.15)', 
+          border: '1px solid var(--color-slate-blue-light)', 
+          borderRadius: 'var(--radius-md)', 
+          padding: '0.8rem 1.2rem',
+          marginTop: '0.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+            <Sparkles size={16} color="var(--color-warning)" />
+            <span>
+              추천 매핑 기간 (겹치는 기간): <strong>{overlapStart}</strong> ~ <strong>{overlapEnd}</strong> 
+              <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>
+                (과제: {pStart} ~ {pEnd} / 근무: {rStart} ~ {rEnd || '현재'})
+              </span>
+            </span>
+          </div>
+          <button 
+            type="button" 
+            onClick={handleApplyRecommendation}
+            style={{ 
+              padding: '0.3rem 0.8rem', 
+              fontSize: '0.8rem', 
+              backgroundColor: 'var(--color-slate-blue-light)'
+            }}
+          >
+            <Calendar size={14} /> 자동 입력
+          </button>
+        </div>
+      );
+    } else {
+      recommendationSection = (
+        <div style={{ 
+          gridColumn: '1 / -1', 
+          backgroundColor: 'var(--color-error-bg)', 
+          border: '1px solid var(--color-error)', 
+          borderRadius: 'var(--radius-md)', 
+          padding: '0.8rem 1.2rem',
+          marginTop: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontSize: '0.9rem',
+          color: 'var(--color-error)'
+        }}>
+          <AlertCircle size={16} />
+          <span>
+            <strong>주의:</strong> 선택된 연구원의 근무 기간과 과제 수행 기간이 겹치지 않습니다! 
+            <span style={{ marginLeft: '0.5rem', opacity: 0.8 }}>
+              (과제: {pStart} ~ {pEnd} / 근무: {rStart} ~ {rEnd || '현재'})
+            </span>
+          </span>
+        </div>
+      );
+    }
+  }
+
   return (
     <div>
       <div className="panel">
@@ -72,6 +162,8 @@ export default function Participations() {
             <input type="number" min="0" max="100" value={formData.rate} onChange={e => setFormData({...formData, rate: Number(e.target.value)})} required />
           </div>
           <button type="submit" style={{ height: '40px' }}><Plus size={16}/> 매핑</button>
+          
+          {recommendationSection}
         </form>
       </div>
 
